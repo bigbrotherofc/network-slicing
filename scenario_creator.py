@@ -155,7 +155,7 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
 
     if L1_level: # each slice has its own L1 resources
 
-        for id in range(n_embb):
+        for id in range(n_embb): #5 个eMBB slice
             slices_ran_embb = [new_slice_embb(id, rng, user_counter)]
             slice_l1_embb = SliceL1eMBB(rng, snr_generator, 20, slices_ran_embb, scheduler)
             slices_l1.append(slice_l1_embb)

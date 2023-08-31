@@ -99,7 +99,7 @@ class SliceRANmMTC:
             self.period[i] = self.rng.choice(self.period_set)
             self.t_to_arrival[i] = 1 + self.rng.choice(np.arange(self.period[i]))
             self.devices.append(MTCdevice(i, repetitions, self.id))
-
+    #时隙slot是用来干什么的就是一个时隙内环境的变化
     def slot(self):
         self.slot_counter += 1
 
@@ -108,7 +108,7 @@ class SliceRANmMTC:
 
         # arrivals
         arrival_list = []
-        arrivals = self.t_to_arrival == 0
+        arrivals = self.t_to_arrival == 0 #每个时隙都会有一些设备流量到达
         indices = np.where(arrivals)
 
         # print('indices = {}'.format(indices))
@@ -154,6 +154,9 @@ class SliceRANeMBB:
     CBR traffic parameters are given in CBR_description
     VBR traffic parameters are given in VBR_description
     '''
+    #slots_per_step = 50
+    #slot_length = 1e-3
+    #norm_const 标准常数
     def __init__(self, rng, user_counter, id, SLA, CBR_description, VBR_description, state_variables, norm_const, slots_per_step, slot_length = 1e-3):
         self.type = 'eMBB'
         self.rng = rng
@@ -161,7 +164,7 @@ class SliceRANeMBB:
         self.id = id
         self.slot_length = slot_length
         self.slots_per_step = slots_per_step
-        self.observation_time = slots_per_step * slot_length
+        self.observation_time = slots_per_step * slot_length #一个步长内的观测时间50ms
         self.SLA = SLA # service level agreement description
         self.state_variables = state_variables
         self.norm_const = norm_const
@@ -181,8 +184,8 @@ class SliceRANeMBB:
 
     def reset(self):
         self.slot_counter = 0
-        self.remaining_time = {}
-        self.cbr_steps_next_arrival = 0
+        self.remaining_time = {} #持续时间
+        self.cbr_steps_next_arrival = 0 #cbr下一个到达的时间
         self.vbr_steps_next_arrival = 0
         self.vbr_ues = {}
         self.cbr_ues = {}
@@ -193,25 +196,25 @@ class SliceRANeMBB:
         return len(self.state_variables)
 
     def cbr_cac(self):
-        '''Admission control for CBR users'''
-        slots = max(self.slot_counter,1)
+        '''Admission control for CBR users'''#准入控制
+        slots = max(self.slot_counter,1) #时隙数量
         time = slots * self.slot_length
-        cbr_prb = self.info['cbr_prb'] / slots
-        cbr_th = self.info['cbr_th'] / time
-        if cbr_prb >= self.SLA['cbr_prb'] or cbr_th >= self.SLA['cbr_th']:
+        cbr_prb = self.info['cbr_prb'] / slots #总共的时隙。总共的prb 平均一个时隙内的
+        cbr_th = self.info['cbr_th'] / time #平均速率
+        if cbr_prb >= self.SLA['cbr_prb'] or cbr_th >= self.SLA['cbr_th']: #如果prb或者速率超过了阈值这是满足SLA的
             return False
         return True
 
     def cbr_arrivals(self):
-        if self.cbr_steps_next_arrival == 0:
+        if self.cbr_steps_next_arrival == 0: #下一次到达距离现在这步的时间
             # generate next arrival
-            inter_arrival_time = self.rng.exponential(1.0 / self.cbr_arrival_rate)
-            inter_arrival_time = np.rint(inter_arrival_time / self.slot_length)
+            inter_arrival_time = self.rng.exponential(1.0 / self.cbr_arrival_rate)#指数分布到达时间
+            inter_arrival_time = np.rint(inter_arrival_time / self.slot_length) #四舍五入取整
             self.cbr_steps_next_arrival = inter_arrival_time
 
-            if self.cbr_cac(): # check admission control
+            if self.cbr_cac(): # check admission control 是指没有满足SLA
                 # generate new user
-                ue_id = next(self.user_counter)
+                ue_id = next(self.user_counter) 
                 cbr_source = CbrSource(bit_rate = self.cbr_bit_rate)
                 ue = UE(ue_id, self.id, cbr_source, CBR)
                 self.cbr_ues[ue_id] = ue
@@ -260,7 +263,7 @@ class SliceRANeMBB:
                 self.cbr_ues.pop(id, None) # or here    
         return departures   
 
-    def slot(self):
+    def slot(self): #一个时隙无非就是到达和离开
         self.slot_counter += 1
         arrivals = self.cbr_arrivals()
         arrivals.extend(self.vbr_arrivals())
@@ -286,8 +289,8 @@ class SliceRANeMBB:
             queue += ue.queue
             snr += ue.e_snr
             n += 1
-        n = max(n,1)
-        self.info['cbr_queue'] += queue/n
+        n = max(n,1) #最少是1 n是用户数量，下面俩是平均值
+        self.info['cbr_queue'] += queue/n #为什么队列要除以时隙数
         self.info['cbr_snr'] += snr/n
 
         queue = 0
@@ -306,14 +309,15 @@ class SliceRANeMBB:
 
     def compute_reward(self):
         '''assesses SLA violations'''
-        cbr_th = self.info['cbr_th']/self.observation_time > self.SLA['cbr_th']
+        cbr_th = self.info['cbr_th']/self.observation_time > self.SLA['cbr_th'] #多个用户计算
+        #SLA也就是说SLA是切片的属性，一个切片可以对应多个用户
         cbr_prb = self.info['cbr_prb']/self.slots_per_step > self.SLA['cbr_prb']
         cbr_queue = self.info['cbr_queue']/self.slots_per_step < self.SLA['cbr_queue']
         vbr_th = self.info['vbr_th']/self.observation_time > self.SLA['vbr_th']
         vbr_prb = self.info['vbr_prb']/self.slots_per_step > self.SLA['vbr_prb']
         vbr_queue = self.info['vbr_queue']/self.slots_per_step < self.SLA['vbr_queue']
         # the slice has to guarantee the objective delay for cbr and vbr if their traffics do not surpass the maximum
-        cbr_fulfilled = cbr_th or cbr_prb or cbr_queue 
+        cbr_fulfilled = cbr_th or cbr_prb or cbr_queue #如果有一个满足就是满足了
         vbr_fulfilled = vbr_th or vbr_prb or vbr_queue
         SLA_fulfilled = cbr_fulfilled and vbr_fulfilled
         return not(SLA_fulfilled)
