@@ -292,7 +292,7 @@ class MCSCodeset:
         for mcs in range(self.n_mcs):
             if self.estimate_rx_prob(mcs, snr) < rx_prob:
                 return max(mcs-1, 0), self.rate[mcs] * self.order[mcs]
-        return mcs, self.rate[mcs] * self.order[mcs]
+        return mcs, self.rate[mcs] * self.order[mcs] #ue_mcs[i], bits_per_sym = self.mcs_codeset.mcs_rate_vs_error(ue.e_snr, error_bound) 调用方式是这样
 
     def response(self, mcs, snr):
         # returns the response of the channel for a given MCS

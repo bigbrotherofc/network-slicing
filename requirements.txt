@@ -1,0 +1,6 @@
+gym==0.15.3  
+numpy==1.19.1   
+tensorflow==1.15.0  
+stable-baselines==2.10.1  
+scipy==1.5.4  
+matplotlib==3.3.4  

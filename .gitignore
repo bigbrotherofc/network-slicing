@@ -1,0 +1,9 @@
+/network-slicingenv
+*.pyc
+/__pycache__
+__pycache__/channel_models.cpython-37.pyc
+gym-ran_slice/gym_ran_slice.egg-info/top_level.txt
+gym-ran_slice/gym_ran_slice.egg-info/dependency_links.txt
+gym-ran_slice/gym_ran_slice.egg-info/PKG-INFO
+gym-ran_slice/gym_ran_slice.egg-info/requires.txt
+gym-ran_slice/gym_ran_slice.egg-info/SOURCES.txt
