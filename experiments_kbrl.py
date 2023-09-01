@@ -44,7 +44,7 @@ class Evaluator():
     
     def evaluate(self, i):
         rng = default_rng(seed = i)
-        node_env = create_env(rng, self.scenario)
+        node_env = create_env(rng, self.scenario) #创造环境返回的是一个nodeb
         print('run {}: Environment created!'.format(i))
         kbrl_agent = create_kbrl_agent(rng, self.scenario, accuracy_range = self.a_range) #这是一个函数啊
         print('run {}: KBRL agent created'.format(i))

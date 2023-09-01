@@ -320,7 +320,7 @@ class SliceRANeMBB:
         cbr_fulfilled = cbr_th or cbr_prb or cbr_queue #如果有一个满足就是满足了
         vbr_fulfilled = vbr_th or vbr_prb or vbr_queue
         SLA_fulfilled = cbr_fulfilled and vbr_fulfilled
-        return not(SLA_fulfilled)
+        return not(SLA_fulfilled) #not(SLA_fulfilled)是1就是不满足SLA SLA_fulfilled是0就是满足SLA
 
     def get_state(self):
         '''converts the info into a normalized vector'''

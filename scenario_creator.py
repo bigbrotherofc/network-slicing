@@ -113,24 +113,24 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
     # -------------------- eMBB normalization constants ----------------------
 
     norm_const_embb = {
-        'cbr_traffic': 5e6 * time_per_step,
-        'cbr_th': 10e6 * time_per_step,
-        'cbr_prb': 25 * slots_per_step,
-        'cbr_queue': 10e4 * slots_per_step,
-        'cbr_snr': 35 * slots_per_step,
-        'vbr_traffic': 5e6 * time_per_step, 
-        'vbr_th': 10e6 * time_per_step, 
-        'vbr_prb': 35 * slots_per_step, 
-        'vbr_queue': 10e4 * slots_per_step, 
-        'vbr_snr': 35 * slots_per_step
+        'cbr_traffic': 5e6 * time_per_step, #250000
+        'cbr_th': 10e6 * time_per_step, #500000
+        'cbr_prb': 25 * slots_per_step, #1250
+        'cbr_queue': 10e4 * slots_per_step, #5000000
+        'cbr_snr': 35 * slots_per_step, #1750
+        'vbr_traffic': 5e6 * time_per_step,  #250000
+        'vbr_th': 10e6 * time_per_step,  #500000
+        'vbr_prb': 35 * slots_per_step, #1750
+        'vbr_queue': 10e4 * slots_per_step, #5000000
+        'vbr_snr': 35 * slots_per_step #1750
     }
 
     # -------------------- mMTC normalization constants -----------------------
 
     norm_const_mmtc = {
-        'devices': 100 * slots_per_step,
-        'avg_rep': 100 * slots_per_step,
-        'delay': 100 * slots_per_step
+        'devices': 100 * slots_per_step, # 5000
+        'avg_rep': 100 * slots_per_step, # 5000
+        'delay': 100 * slots_per_step # 5000
     }
 
     # ------------------- auxiliary functions -----------------------
@@ -178,7 +178,7 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
 
     node = NodeB(slices_l1, slots_per_step, n_prbs)
 
-    node_env = gym.make('gym_ran_slice:RanSlice-v1', node_b = node, penalty = penalty)
+    node_env = gym.make('gym-ran_slice:RanSlice-v1', node_b = node, penalty = penalty)
 
     return node_env
 

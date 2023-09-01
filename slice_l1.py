@@ -164,7 +164,7 @@ class SliceL1eMBB:
         '''
         violations = 0
         for slice_ran in self.slices_ran:
-            violations += slice_ran.compute_reward()
+            violations += slice_ran.compute_reward() #是1的就是违反的
         reward = -1*min(violations, 1)
         if violations == 0:
             reward = 1
