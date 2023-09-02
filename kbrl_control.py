@@ -34,9 +34,9 @@ class KBRL_Control:
         self.adjusted = 0
         self.action = np.array([h.initial_action for h in learners], dtype = np.int16)
         self.security_factors = np.array([h.security_factor for h in learners], dtype = np.int16)        
-        self.margins = np.array([0]*self.n_slices, dtype = np.int16)
-        intial_value = (self.accuracy_range[0] + self.accuracy_range[1])/2
-        self.accuracies = np.full((self.n_slices, self.n_prbs), intial_value, dtype = float)
+        self.margins = np.array([0]*self.n_slices, dtype = np.int16) #这个裕量怎么处理
+        intial_value = (self.accuracy_range[0] + self.accuracy_range[1])/2 #0.995
+        self.accuracies = np.full((self.n_slices, self.n_prbs), intial_value, dtype = float) # 5 ， 200
 
     def select_action(self, state):
         action = np.zeros((self.n_slices), dtype = np.int16)
@@ -48,35 +48,36 @@ class KBRL_Control:
             min_prbs = 0
             max_prbs = self.n_prbs
 
-            # we check the prediction for assignment "offset" prbs below the action
+            # we check the prediction for assignment "offset" prbs below the action 检查预测情况为了分配偏移的prbs
             offset = self.security_factors[i]
             margin = 0
-            for l1_prbs in range(max(min_prbs - offset,0), max_prbs+1):
-                x = np.append(l1_state, l1_prbs/self.n_prbs)
-                prediction = algorithm.predict(x)
+            for l1_prbs in range(max(min_prbs - offset,0), max_prbs+1):# 0到200 就是求最小能满足SLA的
+                x = np.append(l1_state, l1_prbs/self.n_prbs) #这个切片的状态和prb占总的的比例
+#关键在于用来预测的变量，里面实际上没有强化学习的四元组
+                prediction = algorithm.predict(x) #这里面有精确度吗
                 if prediction == 1:
-                    a = min(self.n_prbs, l1_prbs + offset)
-                    margin = a - l1_prbs
+                    a = min(self.n_prbs, l1_prbs + offset) #offset多加的 在
+                    margin = a - l1_prbs #这不就是offset吗
                     l1_prbs = a
                     break
             action[i] = l1_prbs
             self.margins[i] = margin
 
-        assigned_prbs = action.sum()
+        assigned_prbs = action.sum() #这是求总数的了
         if assigned_prbs > self.n_prbs: # not enough resources
             adjusted = 1
             action, diff = self.adjust_action(action, assigned_prbs, self.n_prbs)
-            self.margins = self.margins - diff
+            self.margins = self.margins - diff #如果这个是负数，就说明这个达不到预期的精度了
         
         self.action = action
 
-        return action, adjusted
-
+        return action, adjusted #如果调整了就说明超了
+    #等比例减小的意思
     def adjust_action(self, action, assigned_prbs, n_prbs):
-        relative_p = action / assigned_prbs
+        relative_p = action / assigned_prbs #等比例减小的意思
         new_action = np.array([np.floor(n_prbs * p) for p in relative_p], dtype=np.int16)
         return new_action, action - new_action
-
+    #更新控制是根据四元组
     def update_control(self, state, action, reward):
         hits = np.zeros((self.n_slices), dtype = np.int16)
 
@@ -86,11 +87,11 @@ class KBRL_Control:
             l1_state = state[_i_]
             l1_action = action[i]
             x = np.append(l1_state, l1_action/self.n_prbs)
-            y_pred = algorithm.predict(x)
-            y = reward[i]
-            hit = y == y_pred
+            y_pred = algorithm.predict(x) #预测不是是不是1吗
+            y = reward[i] #是验证预测的准不准的吗
+            hit = y == y_pred #就是指是不是预测准了
             margin = max(0, self.margins[i])
-            if y_pred == 1:
+            if y_pred == 1: #预测是成功 实际上失败了是
                 if hit == 0: # with the same or less margin we would have made the same mistake
                     self.accuracies[i,0:margin+1] = (1 - self.alfa) * self.accuracies[i,0:margin+1]
                 else: # with the same or more margin we would have succeeded as well
@@ -112,7 +113,7 @@ class KBRL_Control:
                     algorithm.update(new_x, y)
 
         return hits
-
+    #system是环境node_env steps是总步数
     def run(self, system, steps, learning_time = -1):
         action = self.action
 
@@ -129,7 +130,7 @@ class KBRL_Control:
             new_state, reward, _, info = system.step(action)
             SLA_labels = info['SLA_labels']
             if learning_time < steps:
-                hits = self.update_control(state, action, SLA_labels)
+                hits = self.update_control(state, action, SLA_labels) #这应该是更新预测器的
             action, self.adjusted = self.select_action(new_state)
             state = new_state
 

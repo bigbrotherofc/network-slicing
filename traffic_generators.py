@@ -55,7 +55,7 @@ class OnOffSource:
 
 class CbrSource(PeriodicSource):
     def __init__(self, bit_rate = 1000000, step_length = SLOT_LENGTH):
-        packet_size = bit_rate * step_length
+        packet_size = bit_rate * step_length #500kbits/s *1ms = 500 bits
         super().__init__(packet_size = packet_size, period = 1)
 
 class VbrSource:

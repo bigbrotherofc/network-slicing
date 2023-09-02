@@ -72,7 +72,7 @@ class SliceL1mMTC:
         if violations == 0:
             reward = 1
         return reward, violations
-
+    #这个用户和切片用户有啥不同
     def add_users(self, ue_list):
         for ue in ue_list:
             self.n_users += 1
@@ -83,7 +83,7 @@ class SliceL1mMTC:
     
     def extract_users(self, ue_id_list):
         pass
-
+    #这是不是就是50次
     def slot(self):
         self.time += 1
 
@@ -97,17 +97,17 @@ class SliceL1mMTC:
         n_tx = min(n_carriers, self.n_users)
 
         # each device transmits one transport block in the whole carrier
-        self.repetitions[:n_tx] -= 1
+        self.repetitions[:n_tx] -= 1 #？每一次来 就是连发十几次 先传输靠前的
 
         # remove devices who have finished their transmission
         remain = self.repetitions > 0
-        self.ue_ids = self.ue_ids[remain]
+        self.ue_ids = self.ue_ids[remain] #true的元素保留，false的元素删除
         self.repetitions = self.repetitions[remain]
-        self.t_start = self.t_start[remain]
+        self.t_start = self.t_start[remain] #这是一个列表啊
         self.slice_ran_ids = self.slice_ran_ids[remain]
 
         # check delays
-        delays = np.maximum(0, self.time - self.t_start)
+        delays = np.maximum(0, self.time - self.t_start) #数字减去一个列表 逐位比较取每一位的最大值
 
         # update number of active devices
         self.n_users = len(self.ue_ids)
@@ -115,16 +115,16 @@ class SliceL1mMTC:
         # create an info summary for SLA assessment
         for slice_ran in self.slices_ran:
             slice_indexes = self.slice_ran_ids == slice_ran.id
-            users_in_slice = len(self.ue_ids[slice_indexes])
+            users_in_slice = len(self.ue_ids[slice_indexes])  #这句不对吧，这是用户的id 和切片的id 这是用户的存的切片id
             delay = 0
             avg_rep = 0
-            devices = users_in_slice
+            devices = users_in_slice #这个切片里面的设备数量
             if users_in_slice > 0:
                 delay = delays[slice_indexes].mean() # max() can be used
                 avg_rep = np.rint(self.repetitions[slice_indexes].mean())
             slice_ran.update_info(delay, avg_rep, devices)
 
-class SliceL1eMBB:
+class SliceL1eMBB: #同类型的调度 有多个切片
     ''' 
     Layer 1 functionality for eMBB slices. It can multiplex several eMBB slices.
     '''
@@ -133,7 +133,7 @@ class SliceL1eMBB:
         self.rng = rng
         self.snr_generator = snr_generator
         self.n_prbs = n_prbs
-        self.prb_slice = slice(0,n_prbs)
+        self.prb_slice = slice(0,n_prbs) #设置切片对象
         self.slices_ran = slices_ran
         self.scheduler = scheduler
         self.reset()
@@ -202,7 +202,7 @@ class SliceL1eMBB:
             # data arrival
             ue.traffic_step()
             # update queued_data
-            queued_data += ue.queue
+            queued_data += ue.queue #这是一整l1的队列
             if self.n_prbs > 0:
                 snr = self.snr_generator.get_snr(ue.id)
                 try:
