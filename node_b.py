@@ -4,7 +4,7 @@
 @author: juanjosealcaraz
 """
 import numpy as np
-
+#构造一个环境应该需要的函数
 class NodeB():
     def __init__(self, slices_l1, slots_per_step, n_prbs, slot_length = 1e-3):
         self.slices_l1 = slices_l1
@@ -13,7 +13,7 @@ class NodeB():
         self.n_prbs = n_prbs
         self.slot_length = slot_length
         self.reset()
-
+#reset
     def reset(self):
         self.steps = 0
         for slice_l1 in self.slices_l1:
@@ -47,7 +47,7 @@ class NodeB():
         info = {'l1_info': [l1.get_info() for l1 in self.slices_l1], 'SLA_labels': SLA_labels, \
                 'violations': violations, 'n_prbs': [l1.n_prbs for l1 in self.slices_l1]}
         return info
-
+# 计算奖励
     def compute_reward(self):
         '''checks if the SLA is fulfilled for each slice'''
         SLA_labels = np.zeros(self.n_slices_l1, dtype = np.int)
@@ -55,8 +55,8 @@ class NodeB():
         for i, l1 in enumerate(self.slices_l1):
             SLA_labels[i], violations[i] = l1.compute_reward()
         return SLA_labels, violations
-
-    def step(self, action):
+# 每步的动作 
+    def step(self, action): #动作空间吗 每个多少个prb
         ''' 
         move a step forward using the selected action
         each step consists of a number of time slots
@@ -67,13 +67,13 @@ class NodeB():
             print('The action must contain as many elements as slices!')
             return self.get_state, self.get_info()
 
-        # configure slices
+        # configure slices 每次只需要配置切片
         i_prb = 0
         for slice_l1, prbs in zip(self.slices_l1, action):
             slice_l1.set_prbs(i_prb, prbs)
             i_prb += prbs
 
-        # run a step
+        # run a step 这就是50步 不改变切片分配的状态
         for _ in range(self.slots_per_step):
             self.slot()
 

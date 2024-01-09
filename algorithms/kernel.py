@@ -22,7 +22,7 @@ class GaussianKernel:
     def predict(self, x):
         k = self.k(x)
         f = k @ self.sv.coeff
-        y = np.sign(f)
+        y = np.sign(f) #符号函数
         if y == 0:
             y = np.random.choice([-1,1])
         return y, f, k

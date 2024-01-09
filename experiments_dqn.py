@@ -22,7 +22,7 @@ from numpy.random import default_rng
 from scenario_creator import create_env
 from stable_baselines.common.cmd_util import make_vec_env
 from stable_baselines import DQN
-from wrapper import DQNWrapper
+from wrapper import DQNWrapper #这个场景只能适用于场景三
 
 SCENARIO = 3
 RUNS = 30
@@ -63,7 +63,7 @@ class Evaluator():
                         control_steps = CONTROL_STEPS, 
                         env_id = i, 
                         path = self.train_path,
-                        verbose = False)
+                        verbose = True)
         print('wrapped environment created')
         env = make_vec_env(lambda: node_env, n_envs=1)
         print('vectorised environment created')
@@ -93,7 +93,7 @@ class Evaluator():
 if __name__=='__main__':
     evaluator = Evaluator()
     # ################################################################
-    # # use this code for sequential execution
+    # use this code for sequential execution
     # for run in run_list:
     #     evaluator.evaluate(run)
     # ################################################################

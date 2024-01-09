@@ -53,7 +53,7 @@ scenarios = [scenario_1, scenario_2, scenario_3, scenario_4]
 # -------------------- eMBB parameters -------------------------
 
 CBR_description = {
-#    'lambda': 1.0/60.0, # low traffic
+#    'lambda': 1.0/60.0, # low traffic 单位时间的发生次数 一分钟到达两个就是一秒到达1/30
     'lambda': 2.0/60.0,
     't_mean': 30.0,
     'bit_rate': 500000
@@ -113,24 +113,24 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
     # -------------------- eMBB normalization constants ----------------------
 
     norm_const_embb = {
-        'cbr_traffic': 5e6 * time_per_step,
-        'cbr_th': 10e6 * time_per_step,
-        'cbr_prb': 25 * slots_per_step,
-        'cbr_queue': 10e4 * slots_per_step,
-        'cbr_snr': 35 * slots_per_step,
-        'vbr_traffic': 5e6 * time_per_step, 
-        'vbr_th': 10e6 * time_per_step, 
-        'vbr_prb': 35 * slots_per_step, 
-        'vbr_queue': 10e4 * slots_per_step, 
-        'vbr_snr': 35 * slots_per_step
+        'cbr_traffic': 5e6 * time_per_step, #250000
+        'cbr_th': 10e6 * time_per_step, #500000
+        'cbr_prb': 25 * slots_per_step, #1250
+        'cbr_queue': 10e4 * slots_per_step, #5000000
+        'cbr_snr': 35 * slots_per_step, #1750
+        'vbr_traffic': 5e6 * time_per_step,  #250000
+        'vbr_th': 10e6 * time_per_step,  #500000
+        'vbr_prb': 35 * slots_per_step, #1750
+        'vbr_queue': 10e4 * slots_per_step, #5000000
+        'vbr_snr': 35 * slots_per_step #1750
     }
 
     # -------------------- mMTC normalization constants -----------------------
 
     norm_const_mmtc = {
-        'devices': 100 * slots_per_step,
-        'avg_rep': 100 * slots_per_step,
-        'delay': 100 * slots_per_step
+        'devices': 100 * slots_per_step, # 5000
+        'avg_rep': 100 * slots_per_step, # 5000
+        'delay': 100 * slots_per_step # 5000
     }
 
     # ------------------- auxiliary functions -----------------------
@@ -142,11 +142,11 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
         return SliceRANeMBB(rng, user_counter, id, SLA_embb, CBR_description, VBR_description, state_variables_embb, norm_const_embb, slots_per_step)
 
     # ------------------- environment creation ------------------------
-
+    #选择性衰减
     snr_generator = SINRSelectiveFading(rng, propagation_type, n_prbs = n_prbs)
-
+    #调制方案
     mcs_codeset = MCSCodeset()
-
+    #调度器
     scheduler = ProportionalFair(mcs_codeset)
 
     user_counter = count()
@@ -155,14 +155,14 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
 
     if L1_level: # each slice has its own L1 resources
 
-        for id in range(n_embb):
-            slices_ran_embb = [new_slice_embb(id, rng, user_counter)]
+        for id in range(n_embb): #5 个eMBB l1 slice
+            slices_ran_embb = [new_slice_embb(id, rng, user_counter)] #好像一个l1也就一个ran
             slice_l1_embb = SliceL1eMBB(rng, snr_generator, 20, slices_ran_embb, scheduler)
             slices_l1.append(slice_l1_embb)
 
         for id in range(n_mmtc):
             slices_ran_mmtc = [new_slice_mmtc(id, rng)]
-            slice_l1_mmtc = SliceL1mMTC(5, slices_ran_mmtc)
+            slice_l1_mmtc = SliceL1mMTC(5, slices_ran_mmtc) #5个prb确定好的 那还分什么
             slices_l1.append(slice_l1_mmtc)
 
     else: # slices are multiplexed in the L1 (the scheduler should handle ues from different slices) 
@@ -178,7 +178,7 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
 
     node = NodeB(slices_l1, slots_per_step, n_prbs)
 
-    node_env = gym.make('gym_ran_slice:RanSlice-v1', node_b = node, penalty = penalty)
+    node_env = gym.make('gym-ran_slice:RanSlice-v1', node_b = node, penalty = penalty)
 
     return node_env
 
@@ -187,7 +187,7 @@ def create_env(rng, n, slots_per_step = 50, propagation_type = 'macro_cell_urban
 alfa = 0.05 # learning parameter
 
 # initial offset and initial action are initialized at random
-embb_sec = (2, 8)
+embb_sec = (2, 8) #初始偏移和动作是指什么
 embb_a = (4, 20)
 mmtc_sec = (1, 4)
 mmtc_a = (2, 10)
@@ -206,10 +206,10 @@ def create_kbrl_agent(rng, n, accuracy_range = [0.99, 0.999]):
     n_prbs = sc['n_prbs']
     n_embb = sc['n_embb']
     n_mmtc = sc['n_mmtc']
-    embb_dim = len(state_variables_embb)
+    embb_dim = len(state_variables_embb) #就那10个
     mmtc_dim = len(state_variables_mmtc)
 
-    learners = [] 
+    learners = [] #学习器，为什么要很多，每个切片都要创建一个学习器 这样怎么分配资源
     i = 0
 
     # create one learner instance per slice
@@ -217,8 +217,8 @@ def create_kbrl_agent(rng, n, accuracy_range = [0.99, 0.999]):
         sv = SVvariable() # create support vector memory
         kernel = GaussianKernel(sv,1) # kernel
         algorithm = Projectron(kernel) # online classifier
-        initial_action = rng.integers(embb_a[0], embb_a[1])
-        sec = rng.integers(embb_sec[0], embb_sec[1])
+        initial_action = rng.integers(embb_a[0], embb_a[1]) #难道说一个切片不能超过20个
+        sec = rng.integers(embb_sec[0], embb_sec[1]) #这是什么安全因子
         learner = Learner(algorithm, slice(i,i+embb_dim), initial_action, sec)
         learners.append(learner)
         i += embb_dim

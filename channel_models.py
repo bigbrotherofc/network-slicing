@@ -81,7 +81,7 @@ def antenna_pattern(theta):
     # provides the gain of the annena according to TS 36.942 section 4.2 Antenna models
     return -1*min(12*(theta/65)**2, 20)
 
-def macro_cell(rng, A = 128.1, B = 37.6):
+def macro_cell(rng, A = 128.1, B = 37.6): #自动生成位置和距离
     # TS 36.942 section 4.5 Propagation conditions and channel models
     x, y = generate_xy(rng)
     d, theta = location(x, y)
@@ -127,7 +127,7 @@ class NominalSINR():
         
     def generate(self):
         return self.sinr_function(self.rng, **self.parameters)
-
+#生成频率选择性衰落的信道
 class SINRSelectiveFading:
     ''' 
     Class that generates a sequence of SINR samples with selective frequency fading from a dataset
@@ -161,11 +161,11 @@ class SINRSelectiveFading:
         self.users = {}
 
     def insert_user(self, user_id):
-        fading_type = self.rng.integers(len(self.samples))
-        n_samples = self.samples[fading_type].shape[1]
-        index = self.rng.integers(n_samples)
+        fading_type = self.rng.integers(len(self.samples)) #纵向一种衰落模式
+        n_samples = self.samples[fading_type].shape[1] #竖向
+        index = self.rng.integers(n_samples) #
         step = self.rng.choice([-1,1])
-        sinr = self.nominal_sinr.generate()
+        sinr = self.nominal_sinr.generate() #指定位置和距离到这的信噪比
         self.users[user_id] = {'fading_type': fading_type, 'index': index, 'step': step, 'nominal_sinr': sinr, 'n_samples': n_samples}
         
     def get_snr(self, user_id):
@@ -184,7 +184,7 @@ class SINRSelectiveFading:
             f = self.users[user_id]['fading_type']
             i = self.users[user_id]['index']
 
-            # Fading gain per RB
+            # Fading gain per RB #这应该是一个列向量
             fading_vector = self.samples[f][:,i]
             is_nan = np.isnan(np.sum(fading_vector))
 
@@ -193,7 +193,7 @@ class SINRSelectiveFading:
     def extract_user(self, user_id):
         self.users.pop(user_id)
 
-
+#光谱是平均衰落的信道
 class SNRGenerator:
     '''
     Generates sequence of SNR values from a dataset considering average fading over the spectrum

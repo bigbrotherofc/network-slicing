@@ -21,7 +21,6 @@ import time
 
 PENALTY = 1000
 SLICES = 5
-
 # SLICES = 2 # scenario 3
 
 class ReportWrapper(gym.Wrapper):
@@ -85,7 +84,7 @@ class ReportWrapper(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         # RL algorithms work better with normalized observations between -1 and 1
-        obs = np.clip(obs,-0.5,1.5) 
+        obs = np.clip(obs,-0.5,1.5) #obs范围
         obs = obs - 0.5
         self.obs = obs
 
@@ -99,7 +98,7 @@ class ReportWrapper(gym.Wrapper):
 
         # collect historical data
         violations = info['total_violations']
-
+        #自带保存的强的一批
         if self.step_counter < self.steps:
             self.violation_history[self.step_counter] = violations
             self.reward_history[self.step_counter] = reward
@@ -143,9 +142,10 @@ class DQNWrapper(ReportWrapper):
         g_eMBB = 2 # ganularity
         max_eMBB = 51 # max prbs for a single slice
         self.actions = []
-        a = list(range(0,max_eMBB,g_eMBB))
+        a = list(range(0,max_eMBB,g_eMBB)) #len(a)=25
+        #25*25=，这也是只有两个
         for (a1,a2) in product(a,a):
-            if a1 + a2 <= self.n_prbs:
+            if a1 + a2 <= self.n_prbs: #就是弄了个集合罢了
                 self.actions.append(np.array([a1, a2], dtype = np.int16))
         self.action_space = spaces.Discrete(len(self.actions))
     

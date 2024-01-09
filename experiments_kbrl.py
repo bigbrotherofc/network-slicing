@@ -32,7 +32,7 @@ class Evaluator():
     def __init__(self, scenario, a_range):
         self.scenario = scenario
         self.a_range = a_range
-        a = int(a_range[0]*100)
+        a = int(a_range[0]*100) #97精度
         self.path = './results/scenario_{}/{}_{}/'.format(scenario, name, a)
         if not os.path.isdir(self.path):
             try:
@@ -44,11 +44,11 @@ class Evaluator():
     
     def evaluate(self, i):
         rng = default_rng(seed = i)
-        node_env = create_env(rng, self.scenario)
+        node_env = create_env(rng, self.scenario) #创造环境返回的是一个nodeb
         print('run {}: Environment created!'.format(i))
-        kbrl_agent = create_kbrl_agent(rng, self.scenario, accuracy_range = self.a_range)
+        kbrl_agent = create_kbrl_agent(rng, self.scenario, accuracy_range = self.a_range) #这是一个函数啊
         print('run {}: KBRL agent created'.format(i))
-        results = kbrl_agent.run(node_env, STEPS)
+        results = kbrl_agent.run(node_env, STEPS) #智能体的run函数的参数是环境和步数
         print('run {}: KBRL agent trained'.format(i))
         file_path = '{}results_{}.npz'.format(self.path, i)
         savez(file_path, **results)
@@ -58,14 +58,14 @@ if __name__=='__main__':
     for scenario, a_range in product(scenarios, accuracy_list):
         evaluator = Evaluator(scenario, a_range)
         # ################################################################
-        # # use this code for sequential execution
-        # for run in run_list:
-        #     evaluator.evaluate(run)
-        #     print('run {} finised!'.format(run))   
+        # use this code for sequential execution
+        for run in run_list:
+            evaluator.evaluate(run)
+            print('run {} finised!'.format(run))   
         # ################################################################
 
         # ################################################################
         # use this code for parallel execution
-        with cf.ProcessPoolExecutor(PROCESSES) as E:
-            results = E.map(evaluator.evaluate, run_list)
+        # with cf.ProcessPoolExecutor(PROCESSES) as E:
+        #     results = E.map(evaluator.evaluate, run_list)
         # ################################################################
