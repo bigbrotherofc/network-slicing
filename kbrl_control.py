@@ -77,27 +77,27 @@ class KBRL_Control:
         relative_p = action / assigned_prbs #等比例减小的意思
         new_action = np.array([np.floor(n_prbs * p) for p in relative_p], dtype=np.int16)
         return new_action, action - new_action
-    #更新控制是根据四元组
+    #更新控制是根据四元组 主要是更新预测结果吧
     def update_control(self, state, action, reward):
         hits = np.zeros((self.n_slices), dtype = np.int16)
 
         for i, h in enumerate(self.learners):
             algorithm = h.algorithm
-            _i_ = h.indexes
+            _i_ = h.indexes #这个智能体负责的十个状态 你像难道这样也要给一个lstm预测吗 ，他是一个智能体一个预测算法
             l1_state = state[_i_]
             l1_action = action[i]
-            x = np.append(l1_state, l1_action/self.n_prbs)
-            y_pred = algorithm.predict(x) #预测不是是不是1吗
+            x = np.append(l1_state, l1_action/self.n_prbs) #状态以及分配到的prb占总的比例
+            y_pred = algorithm.predict(x) #预测不是是不是1吗 直接吧这个算法变成lstm可以吗
             y = reward[i] #是验证预测的准不准的吗
             hit = y == y_pred #就是指是不是预测准了
             margin = max(0, self.margins[i])
             if y_pred == 1: #预测是成功 实际上失败了是
                 if hit == 0: # with the same or less margin we would have made the same mistake
-                    self.accuracies[i,0:margin+1] = (1 - self.alfa) * self.accuracies[i,0:margin+1]
-                else: # with the same or more margin we would have succeeded as well
-                    self.accuracies[i,margin:] = (1 - self.alfa) * self.accuracies[i,margin:] + self.alfa
+                    self.accuracies[i,0:margin+1] = (1 - self.alfa) * self.accuracies[i,0:margin+1] #就是比这个分配的少准确率是降低的
+                else: # with the same or more margin we would have succeeded as well 预测成功了实际上也成功了
+                    self.accuracies[i,margin:] = (1 - self.alfa) * self.accuracies[i,margin:] + self.alfa #就是比这个多的话准确率会很高
             if not self.adjusted: # if the action was not adjusted then update security_factor
-                self.security_factors[i] = np.argmax(self.accuracies[i,:] > self.accuracy_range[0])
+                self.security_factors[i] = np.argmax(self.accuracies[i,:] > self.accuracy_range[0]) #这是关键，就是找到最小的prb满足精度要求
 
             hits[i] = hit
             # sample augmentation
@@ -117,20 +117,21 @@ class KBRL_Control:
     def run(self, system, steps, learning_time = -1):
         action = self.action
 
-        SLA_history = np.zeros((steps), dtype = np.int16)
-        reward_history = np.zeros((steps), dtype = np.float)
-        violation_history = np.zeros((steps), dtype = np.int16)
-        adjusted_actions = np.zeros((steps), dtype = np.int16)
+        SLA_history = np.zeros((steps), dtype = np.int16) #状态之一
+        reward_history = np.zeros((steps), dtype = np.float)# 奖励
+        violation_history = np.zeros((steps), dtype = np.int16)#违反的SLA，也是状态之一吧，专用于kbrl的
+        adjusted_actions = np.zeros((steps), dtype = np.int16)# 相当于动作
         resources_history = np.zeros((steps), dtype = np.int16)
         hits_history = np.zeros((len(action),steps), dtype = np.int16)
 
-        state = system.reset()
+        state = system.reset() #5个切片的状态就是50个变量
 
         for i in range(steps):
             new_state, reward, _, info = system.step(action)
-            SLA_labels = info['SLA_labels']
+            SLA_labels = info['SLA_labels'] #这个才像真实的reward
             if learning_time < steps:
-                hits = self.update_control(state, action, SLA_labels) #这应该是更新预测器的
+                #上一次的状态，这一次的动作，这一次的奖励
+                hits = self.update_control(state, action, SLA_labels) #这应该是更新预测器的 用的是上一次的状态
             action, self.adjusted = self.select_action(new_state)
             state = new_state
 
@@ -140,6 +141,9 @@ class KBRL_Control:
             resources_history[i] = action.sum()
             adjusted_actions[i] = self.adjusted
             hits_history[:,i] = hits
+
+            if i % 100 == 0:
+                print('run kbrl steps {}'.format(i))
 
         print('mean resources = {}'.format(resources_history.mean()))
         print('total violations = {}'.format(violation_history.sum()))

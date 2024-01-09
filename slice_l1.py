@@ -206,7 +206,7 @@ class SliceL1eMBB: #同类型的调度 有多个切片
             if self.n_prbs > 0:
                 snr = self.snr_generator.get_snr(ue.id)
                 try:
-                    ue.estimate_snr(snr[self.prb_slice])
+                    ue.estimate_snr(snr[self.prb_slice]) #10000组 一组200个代表不同频率的频率选择型衰落
                 except:
                     print('problem with snr estimation!')
                     print('prb_slice = {}'.format(self.prb_slice))
@@ -221,7 +221,7 @@ class SliceL1eMBB: #同类型的调度 有多个切片
                 received = False
                 if ue.prbs:
                     received = self.rng.random() < ue.p
-                ue.transmission_step(received)
+                ue.transmission_step(received) #更新的是平均速率
 
         # update slice_ran info
         for slice_ran in self.slices_ran:
